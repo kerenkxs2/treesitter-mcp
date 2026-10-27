@@ -220,6 +220,17 @@ fn is_context_node(node_type: &str, language: Language) -> bool {
                 | "interface_declaration"
                 | "enum_declaration"
         ),
+        Language::C | Language::Cpp => matches!(
+            node_type,
+            "function_definition"
+                | "declaration"
+                | "field_declaration"
+                | "class_specifier"
+                | "struct_specifier"
+                | "union_specifier"
+                | "enum_specifier"
+                | "namespace_definition"
+        ),
         _ => false,
     }
 }
@@ -229,17 +240,18 @@ fn extract_scope_info(node: Node, source: &str) -> Option<ScopeInfo> {
     let kind = match node.kind() {
         "function_item" | "function_definition" | "function_declaration" => "function",
         "method_definition" | "method_declaration" => "method",
-        "class_definition" | "class_declaration" => "class",
+        "class_definition" | "class_declaration" | "class_specifier" => "class",
         "impl_item" => "impl",
         "trait_item" => "trait",
-        "struct_item" | "struct_declaration" => "struct",
-        "enum_item" | "enum_declaration" => "enum",
+        "struct_item" | "struct_declaration" | "struct_specifier" | "union_specifier" => "struct",
+        "enum_item" | "enum_declaration" | "enum_specifier" => "enum",
         "mod_item" | "module" => "module",
         "arrow_function" | "function_expression" => "function",
         "constructor_declaration" => "constructor",
         "property_declaration" => "property",
         "interface_declaration" => "interface",
-        "namespace_declaration" => "namespace",
+        "namespace_declaration" | "namespace_definition" => "namespace",
+        "declaration" | "field_declaration" => "function",
         _ => "unknown",
     };
 
@@ -255,6 +267,20 @@ fn extract_scope_info(node: Node, source: &str) -> Option<ScopeInfo> {
 
 /// Extract name from a node
 fn extract_name(node: Node, source: &str) -> Option<String> {
+    if (node.kind() == "function_definition" && node.child_by_field_name("declarator").is_some())
+        || matches!(
+            node.kind(),
+            "declaration"
+                | "field_declaration"
+                | "class_specifier"
+                | "struct_specifier"
+                | "union_specifier"
+                | "enum_specifier"
+                | "namespace_definition"
+        )
+    {
+        return crate::analysis::shape::c_family::context_name(node, source);
+    }
     // Try common name field names
     for field_name in &["name", "property", "field"] {
         if let Some(name_node) = node.child_by_field_name(field_name) {
@@ -279,6 +305,20 @@ fn extract_name(node: Node, source: &str) -> Option<String> {
 
 /// Extract signature from a node
 fn extract_signature(node: Node, source: &str) -> Option<String> {
+    if (node.kind() == "function_definition" && node.child_by_field_name("declarator").is_some())
+        || matches!(
+            node.kind(),
+            "declaration"
+                | "field_declaration"
+                | "class_specifier"
+                | "struct_specifier"
+                | "union_specifier"
+                | "enum_specifier"
+                | "namespace_definition"
+        )
+    {
+        return Some(crate::analysis::shape::c_family::signature(node, source));
+    }
     // For functions, methods, and constructors, try to get the full signature
     if node.kind().contains("function")
         || node.kind() == "method_definition"

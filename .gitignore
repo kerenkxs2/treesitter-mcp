@@ -2,7 +2,6 @@
 **/target/
 **/*.rs.bk
 *.pdb
-Cargo.lock
 
 # IDE
 .idea/
@@ -30,3 +29,7 @@ coverage/
 mutants.out/
 
 .opencode/
+
+# Serena project settings are shared; runtime state remains local.
+.serena/*
+!.serena/project.yml

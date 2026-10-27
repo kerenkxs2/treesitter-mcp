@@ -1,12 +1,3 @@
-mod analysis;
-mod common;
-mod extraction;
-mod handler;
-mod mcp_types;
-mod parser;
-mod tools;
-
-use handler::TreesitterServerHandler;
 use rust_mcp_sdk::schema::{
     Implementation, InitializeResult, ProtocolVersion, ServerCapabilities, ServerCapabilitiesTools,
 };
@@ -16,6 +7,7 @@ use rust_mcp_sdk::{
     McpServer, StdioTransport, ToMcpServerHandler, TransportOptions,
 };
 use std::sync::Arc;
+use treesitter_mcp::handler::TreesitterServerHandler;
 
 #[tokio::main]
 async fn main() -> SdkResult<()> {

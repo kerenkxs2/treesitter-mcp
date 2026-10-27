@@ -1,13 +1,14 @@
 # Agent Guidelines for treesitter-mcp
 
 ## Build & Test Commands
-- **Build**: `cargo build` (debug) or `cargo build --release` (optimized)
-- **Test all**: `cargo test`
-- **Single test**: `cargo test test_name` (e.g., `cargo test test_code_map_single_file`)
-- **Test with output**: `cargo test -- --nocapture`
-- **Lint**: `cargo clippy -- -D warnings` (must pass with zero warnings)
-- **Format check**: `cargo fmt --check`
-- **Auto-format**: `cargo fmt`
+- **Build**: `task build` (normal `target/release`), or pass `output_dir=target/alpha-cpp` to stage independently of connected clients.
+- **Test all**: `task test` (existing upstream regressions and C/C++ contract tests).
+- **Focused C/C++ tests**: `task test:cpp`.
+- **Check**: `task check` (formatting, runtime Clippy with zero warnings, Go vet and the maintained-source size gate).
+- **Auto-format**: `task format`.
+- **Source size**: `task source:line-check` checks maintained files in the current change against the 500-line ceiling; preserve untouched third-party scope.
+- **MCP protocol smoke**: `task smoke`, optionally `-- --voxel-root /path/to/godot_voxel` for real C++ source. The smoke server is isolated; deployment/reload of connected clients is a separate operation.
+- Task parameters are explicit inputs. Do not add environment-variable modes or replace the Taskfile with shell automation. Local maintenance requires Rust, Task and Go.
 
 ## Code Style & Conventions
 - **TDD Approach**: Follow RED/GREEN/BLUE pattern - write tests first, implement to pass, refactor
@@ -24,11 +25,13 @@
 ## treesitter-mcp Tools
 Use treesitter-mcp to understand code structure before making changes:
 - **Exploring codebase?** → `code_map` on the directory
-- **Before editing a file?** → `parse_file` to understand it fully
+- **Before editing a known symbol?** → `minimal_edit_context` for the target and its relevant dependencies
 - **Refactoring or renaming?** → `find_usages` to check impact
 - **After making changes?** → `parse_diff` to verify what changed at symbol level
 - **Before running tests?** → `affected_by_diff` to see what might break
-- **Got a line number?** → `get_context` to understand scope
-- **Need quick file overview?** → `file_shape` for skeleton only
+- **Got a line number?** → `symbol_at_line` to identify the symbol and scope
+- **Need quick file overview?** → `view_code` with `detail="signatures"`
 
 Prefer treesitter-mcp over grep for structural queries (finding functions, classes, usages).
+
+**Keep the instruction files in step.** `AGENTS.md` is the source of `CLAUDE.md`, `GEMINI.md` and any other assistant instruction file beside it. They carry the same content; only a section headed as specific to one assistant, placed just before this notice, may differ. Changing any of them means reviewing and updating the others in the same change.

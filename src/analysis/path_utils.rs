@@ -105,7 +105,11 @@ pub fn find_project_root(path: &Path) -> Option<PathBuf> {
             || current.join("go.mod").exists()
             || current.join(".git").exists()
         {
-            return Some(current.to_path_buf());
+            return Some(if current.as_os_str().is_empty() {
+                PathBuf::from(".")
+            } else {
+                current.to_path_buf()
+            });
         }
 
         current = current.parent()?;

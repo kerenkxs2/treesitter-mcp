@@ -28,6 +28,10 @@ pub enum Language {
     Java,
     /// Go programming language (.go)
     Go,
+    /// C implementation files (.c).
+    C,
+    /// C++ implementations and headers (.cpp, .cc, .cxx, .h, .hpp, .hh, .hxx).
+    Cpp,
 }
 
 impl Language {
@@ -44,6 +48,8 @@ impl Language {
             Language::CSharp => "C#",
             Language::Java => "Java",
             Language::Go => "Go",
+            Language::C => "C",
+            Language::Cpp => "C++",
         }
     }
 
@@ -60,6 +66,8 @@ impl Language {
             Language::CSharp => tree_sitter_c_sharp::LANGUAGE.into(),
             Language::Java => tree_sitter_java::LANGUAGE.into(),
             Language::Go => tree_sitter_go::LANGUAGE.into(),
+            Language::C => tree_sitter_c::LANGUAGE.into(),
+            Language::Cpp => tree_sitter_cpp::LANGUAGE.into(),
         }
     }
 }
@@ -109,6 +117,11 @@ impl Language {
 pub fn detect_language(path: impl AsRef<Path>) -> Result<Language> {
     let path = path.as_ref();
 
+    // Unix C++ sources conventionally use uppercase .C; ordinary .c is C.
+    if path.extension().and_then(|extension| extension.to_str()) == Some("C") {
+        return Ok(Language::Cpp);
+    }
+
     // Extract and normalize extension to lowercase
     let extension = path
         .extension()
@@ -126,6 +139,8 @@ pub fn detect_language(path: impl AsRef<Path>) -> Result<Language> {
         Some("cs") => Ok(Language::CSharp),
         Some("java") => Ok(Language::Java),
         Some("go") => Ok(Language::Go),
+        Some("c") => Ok(Language::C),
+        Some("h" | "hh" | "hpp" | "hxx" | "cc" | "cpp" | "cxx" | "c++") => Ok(Language::Cpp),
         Some(ext) => {
             bail!("Unsupported file extension: .{}", ext)
         }

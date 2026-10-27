@@ -1,0 +1,40 @@
+version: '3'
+
+vars:
+  output_dir: '{{.output_dir | default "target"}}'
+  binary: '{{.binary | default (printf "%s/release/treesitter-mcp" .output_dir)}}'
+
+tasks:
+  build:
+    desc: Build release; use output_dir=target/alpha-cpp to stage independently
+    deps: [source:line-check]
+    cmds:
+      - cargo build --release --locked --target-dir '{{.output_dir}}'
+  check:
+    desc: Check formatting and lint the runtime; task test covers upstream tests
+    deps: [source:line-check]
+    cmds:
+      - cargo fmt --check
+      - cargo clippy --lib --bins --locked --target-dir '{{.output_dir}}' -- -D warnings
+      - go vet tools/smoke/main.go
+      - go vet tools/quality/main.go
+  test:
+    desc: Run the existing regression suite and C/C++ coverage
+    cmds:
+      - cargo test --locked --target-dir '{{.output_dir}}'
+  test:cpp:
+    desc: Run focused C/C++ tool-contract coverage
+    cmds:
+      - cargo test --locked --target-dir '{{.output_dir}}' --test cpp_support
+  format:
+    cmds:
+      - cargo fmt
+      - gofmt -w tools/smoke/main.go tools/quality/main.go
+  source:line-check:
+    desc: Enforce 500 lines for maintained files in the current change
+    cmds:
+      - go run tools/quality/main.go --root .
+  smoke:
+    desc: Exercise the staged MCP over stdio; optionally pass --voxel-root PATH
+    cmds:
+      - go run tools/smoke/main.go --binary '{{.binary}}' --root . {{.CLI_ARGS}}

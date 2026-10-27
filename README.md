@@ -237,6 +237,48 @@ Tree-sitter MCP Server exposes powerful code analysis tools through the MCP prot
 - **C#** (.cs)
 - **Java** (.java)
 - **Go** (.go)
+- **C** (.c)
+- **C++** (.cpp, .cc, .cxx, .c++, .h, .hpp, .hh, .hxx and Unix .C)
+
+C and C++ use their own upstream Tree-sitter grammars. The C++ extractor understands
+namespaces, class/struct members, constructors, destructors, templates and qualified
+out-of-line definitions. Header `.h` files are explicitly parsed as C++; `.c` files
+use C. This is a fixed language policy, not a retry with a different grammar.
+Local quoted includes resolve relative to their source file. Compiler include paths,
+macro expansion, overload resolution and exact semantic references still belong to
+the compiler/LSP; syntax-based call and usage results retain that limitation.
+
+## Local command surface
+
+Use the root Taskfile for local maintenance:
+
+```text
+task build
+task check
+task test:cpp
+task test
+task smoke
+```
+
+`task build` writes the normal `target/release/treesitter-mcp`. To prepare and verify
+an independent build while existing clients remain connected:
+
+```text
+task build output_dir=target/alpha-cpp
+task smoke output_dir=target/alpha-cpp -- --voxel-root /path/to/godot_voxel
+```
+
+Smoke starts its own MCP stdio server and checks existing Python, Go, Rust and
+TypeScript fixtures plus the C++ header/source fixture. An explicit `--voxel-root`
+also checks real Voxel Tools source with `view_code`, `code_map`, `find_usages` and
+`type_map`. It does not restart connected clients. `binary=/path/to/executable`
+can select an already built executable explicitly.
+
+`task source:line-check` enforces the 500-line ceiling on maintained programming
+files in the current Git change, including newly authored files. The extraction
+modules modified for C/C++ are split by language and analysis responsibility;
+untouched upstream files remain outside this change's maintenance gate. The Rust
+dependency lockfile is versioned so build/test/check use the same resolved inputs.
 
 ## Available Tools
 
