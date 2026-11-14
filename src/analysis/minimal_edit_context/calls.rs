@@ -49,10 +49,13 @@ pub(super) fn collect_called_names_from_node(
 
 pub(super) fn is_call_node(kind: &str, language: Language) -> bool {
     match language {
+        Language::GDScript => matches!(kind, "call" | "attribute_call"),
+        Language::Lua => kind == "function_call",
         Language::Rust => matches!(kind, "call_expression" | "method_call_expression"),
         Language::Python => kind == "call",
         Language::JavaScript
         | Language::TypeScript
+        | Language::Tsx
         | Language::Go
         | Language::C
         | Language::Cpp => kind == "call_expression",
@@ -81,7 +84,7 @@ pub(super) fn call_name(node: Node<'_>, source: &str) -> Option<String> {
 }
 
 pub(super) fn last_identifier_text(node: Node<'_>, source: &str) -> Option<String> {
-    if node.kind() == "identifier" || node.kind().ends_with("_identifier") {
+    if crate::parser::scripting::identifier(node.kind()) {
         return node
             .utf8_text(source.as_bytes())
             .ok()

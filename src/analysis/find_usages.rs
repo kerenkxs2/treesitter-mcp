@@ -352,11 +352,17 @@ fn visit_node(
 ) -> bool {
     let node = cursor.node();
 
-    if node.kind() == "identifier" || node.kind().ends_with("_identifier") {
+    if crate::parser::scripting::identifier(node.kind()) {
         if let Ok(text) = node.utf8_text(search.source.as_bytes()) {
             if text == search.symbol {
                 let start_pos = node.start_position();
-                let usage_type = classify_usage_type(&node);
+                let usage_type = if matches!(search.language, Language::GDScript | Language::Lua) {
+                    crate::parser::scripting::usage_kind(node)
+                        .unwrap_or("reference")
+                        .to_string()
+                } else {
+                    classify_usage_type(&node)
+                };
 
                 let context = if budget.max_is_zero() {
                     String::new()

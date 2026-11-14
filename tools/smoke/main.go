@@ -138,12 +138,41 @@ func run(binary, root, voxel string) error {
 		{"tests/fixtures/go_project/main.go", "main"},
 		{"tests/fixtures/rust_project/src/calculator.rs", "add"},
 		{"tests/fixtures/typescript_project/calculator.ts", "add"},
+		{"tests/fixtures/typescript_project/panel.tsx", "panel"},
+		{"tests/fixtures/gdscript_project/player.gd", "update"},
+		{"tests/fixtures/gdscript_project/math.gdscript", "scale"},
+		{"tests/fixtures/lua_project/player.lua", "local Math = require"},
 		{"tests/fixtures/cpp_terrain/terrain.hpp", "game::Terrain"},
 		{"tests/fixtures/cpp_terrain/terrain.cpp", "game::Terrain::update"},
 	}
 	for _, fixture := range fixtures {
 		if err = c.tool("view_code", map[string]any{"file_path": filepath.Join(root, fixture.path), "detail": "signatures"}, fixture.marker); err != nil {
 			return err
+		}
+	}
+	for _, fixture := range []struct{ path, typeName string }{
+		{"tests/fixtures/typescript_project/navigation.ts", "Counter"},
+		{"tests/fixtures/rust_project/src/navigation.rs", "Counter"},
+		{"tests/fixtures/go_project/navigation.go", "Counter"},
+		{"tests/fixtures/gdscript_project/player.gd", "Player"},
+		{"tests/fixtures/lua_project/player.lua", "Player"},
+	} {
+		path := filepath.Join(root, fixture.path)
+		for _, call := range []struct {
+			name   string
+			args   map[string]any
+			marker string
+		}{
+			{"view_code", map[string]any{"file_path": path, "detail": "full", "focus_symbol": "update"}, "twice(delta)"},
+			{"code_map", map[string]any{"path": path, "detail": "signatures", "with_types": true}, "update"},
+			{"find_usages", map[string]any{"path": path, "symbol": "twice", "context_lines": 0}, "|call|"},
+			{"type_map", map[string]any{"path": path, "count_usages": false}, fixture.typeName},
+			{"minimal_edit_context", map[string]any{"file_path": path, "symbol_name": "update"}, "twice"},
+			{"call_graph", map[string]any{"file_path": path, "symbol_name": "update", "direction": "callees"}, "callee|twice|"},
+		} {
+			if err = c.tool(call.name, call.args, call.marker); err != nil {
+				return fmt.Errorf("%s: %w", path, err)
+			}
 		}
 	}
 	cpp := filepath.Join(root, "tests/fixtures/cpp_terrain")

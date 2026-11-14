@@ -360,5 +360,5 @@ fn contains_point(node: Node<'_>, point: Point) -> bool {
 }
 
 fn is_identifier(node: Node<'_>) -> bool {
-    node.kind() == "identifier" || node.kind().ends_with("_identifier")
+    crate::parser::scripting::identifier(node.kind())
 }

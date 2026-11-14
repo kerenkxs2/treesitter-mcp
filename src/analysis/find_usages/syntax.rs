@@ -127,6 +127,8 @@ pub(crate) fn scope_for_node(node: Node, source: &str, language: Language) -> St
         if is_context_node(candidate.kind(), language) {
             let name = if matches!(language, Language::C | Language::Cpp) {
                 crate::analysis::shape::c_family::context_name(candidate, source)
+            } else if matches!(language, Language::GDScript | Language::Lua) {
+                crate::parser::scripting::context_name(candidate, source)
             } else {
                 extract_scope_name(candidate, source)
             };
@@ -143,12 +145,20 @@ pub(crate) fn scope_for_node(node: Node, source: &str, language: Language) -> St
 
 pub(super) fn is_context_node(node_type: &str, language: Language) -> bool {
     match language {
+        Language::GDScript => matches!(
+            node_type,
+            "function_definition" | "lambda" | "class_definition"
+        ),
+        Language::Lua => matches!(
+            node_type,
+            "function_declaration" | "function_definition" | "table_constructor"
+        ),
         Language::Rust => matches!(
             node_type,
             "function_item" | "impl_item" | "trait_item" | "struct_item" | "enum_item" | "mod_item"
         ),
         Language::Python => matches!(node_type, "function_definition" | "class_definition"),
-        Language::JavaScript | Language::TypeScript => matches!(
+        Language::JavaScript | Language::TypeScript | Language::Tsx => matches!(
             node_type,
             "function_declaration"
                 | "method_definition"

@@ -13,6 +13,7 @@ use tree_sitter::{Query, QueryCursor};
 use crate::parser::Language;
 
 mod c_family;
+mod scripting;
 
 /// Resolve all file dependencies for a given source file
 ///
@@ -25,9 +26,12 @@ pub fn resolve_dependencies(
     project_root: &Path,
 ) -> Vec<PathBuf> {
     match language {
+        Language::GDScript | Language::Lua => {
+            scripting::resolve(language, source, file_path, project_root)
+        }
         Language::Rust => find_rust_dependencies(source, file_path, project_root),
         Language::Python => find_python_dependencies(source, file_path, project_root),
-        Language::JavaScript | Language::TypeScript => {
+        Language::JavaScript | Language::TypeScript | Language::Tsx => {
             find_js_ts_dependencies(source, file_path, project_root)
         }
         Language::Go => find_go_dependencies(source, file_path, project_root),
@@ -132,7 +136,13 @@ pub fn find_js_ts_dependencies(
         .map(|e| e == "ts" || e == "tsx")
         .unwrap_or(false);
 
-    let language = if is_ts {
+    let language = if file_path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("tsx"))
+    {
+        tree_sitter_typescript::LANGUAGE_TSX.into()
+    } else if is_ts {
         tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into()
     } else {
         tree_sitter_javascript::LANGUAGE.into()

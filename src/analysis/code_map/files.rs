@@ -66,15 +66,18 @@ pub(super) fn process_file_combined(
         }
     }
 
-    let functions = if enhanced_shape.functions.is_empty() {
-        Vec::new()
-    } else {
-        enhanced_shape
-            .functions
-            .iter()
-            .map(|f| filter_function_by_detail(f, options.detail_level))
-            .collect()
-    };
+    let mut functions: Vec<_> = enhanced_shape
+        .functions
+        .iter()
+        .map(|function| filter_function_by_detail(function, options.detail_level))
+        .collect();
+    for class in &enhanced_shape.classes {
+        for method in &class.methods {
+            let mut method = method.clone();
+            method.name = format!("{}::{}", class.name, method.name);
+            functions.push(filter_function_by_detail(&method, options.detail_level));
+        }
+    }
 
     let structs = if enhanced_shape.structs.is_empty() {
         Vec::new()
@@ -113,9 +116,13 @@ pub(super) fn extract_types_from_source(
     use crate::parser::Language;
 
     let types = match language {
+        Language::GDScript | Language::Lua => {
+            crate::extraction::types::extract_scripting_types(source, path, language)
+                .map_err(|e| io::Error::other(e.to_string()))?
+        }
         Language::Rust => crate::extraction::types::extract_rust_types(source, path)
             .map_err(|e| io::Error::other(e.to_string()))?,
-        Language::TypeScript => {
+        Language::TypeScript | Language::Tsx => {
             crate::extraction::types::extract_typescript_types(source, path, true)
                 .map_err(|e| io::Error::other(e.to_string()))?
         }

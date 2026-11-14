@@ -167,10 +167,12 @@ pub(super) fn extract_leading_comment_block(
 
 pub(super) fn is_line_comment_text(trimmed: &str, language: Language) -> bool {
     match language {
-        Language::Python => trimmed.starts_with('#'),
+        Language::Python | Language::GDScript => trimmed.starts_with('#'),
+        Language::Lua => trimmed.starts_with("--"),
         Language::Rust
         | Language::JavaScript
         | Language::TypeScript
+        | Language::Tsx
         | Language::Swift
         | Language::CSharp
         | Language::Java
@@ -187,6 +189,7 @@ pub(super) fn supports_block_comments(language: Language) -> bool {
         Language::Rust
             | Language::JavaScript
             | Language::TypeScript
+            | Language::Tsx
             | Language::Swift
             | Language::CSharp
             | Language::Java
@@ -253,6 +256,7 @@ pub(super) fn is_comment_node(node: &Node, language: Language) -> bool {
         Language::Rust
         | Language::JavaScript
         | Language::TypeScript
+        | Language::Tsx
         | Language::Swift
         | Language::CSharp
         | Language::Java
@@ -289,6 +293,7 @@ pub(super) fn extract_doc_from_comment(comment_text: &str, language: Language) -
         }
         Language::JavaScript
         | Language::TypeScript
+        | Language::Tsx
         | Language::Java
         | Language::Go
         | Language::C

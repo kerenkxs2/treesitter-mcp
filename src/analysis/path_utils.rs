@@ -103,6 +103,8 @@ pub fn find_project_root(path: &Path) -> Option<PathBuf> {
             || current.join("package.json").exists()
             || current.join("pyproject.toml").exists()
             || current.join("go.mod").exists()
+            || current.join("project.godot").is_file()
+            || current.join(".luarc.json").is_file()
             || current.join(".git").exists()
         {
             return Some(if current.as_os_str().is_empty() {

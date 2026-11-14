@@ -19,6 +19,7 @@ use std::path::Path;
 use std::process::Command;
 
 mod c_family;
+mod scripting;
 
 // ============================================================================
 // Data Structures
@@ -158,10 +159,13 @@ fn extract_symbols(
     let mut symbols = HashMap::new();
 
     match language {
+        Language::GDScript | Language::Lua => {
+            scripting::extract(tree, source, language, &mut symbols)?
+        }
         Language::Rust => extract_rust_symbols(tree, source, &mut symbols)?,
         Language::Python => extract_python_symbols(tree, source, &mut symbols)?,
         Language::JavaScript => extract_js_symbols(tree, source, &mut symbols)?,
-        Language::TypeScript => extract_ts_symbols(tree, source, &mut symbols)?,
+        Language::TypeScript | Language::Tsx => extract_ts_symbols(tree, source, &mut symbols)?,
         Language::Go => extract_go_symbols(tree, source, &mut symbols)?,
         Language::C | Language::Cpp => c_family::extract(tree, source, language, &mut symbols)?,
         Language::Html | Language::Css | Language::Swift | Language::CSharp | Language::Java => {

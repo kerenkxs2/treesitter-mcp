@@ -1,40 +1,65 @@
 version: '3'
 
 vars:
-  output_dir: '{{.output_dir | default "target"}}'
+  output_dir: '{{.output_dir | default (printf "%s/target" .ROOT_DIR)}}'
   binary: '{{.binary | default (printf "%s/release/treesitter-mcp" .output_dir)}}'
+  jobs: '{{.jobs | default "2"}}'
 
 tasks:
   build:
-    desc: Build release; use output_dir=target/alpha-cpp to stage independently
+    desc: Build release; pass an absolute output_dir to stage independently
     deps: [source:line-check]
     cmds:
-      - cargo build --release --locked --target-dir '{{.output_dir}}'
+      - cargo build --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --release --locked --jobs '{{.jobs}}' --target-dir '{{.output_dir}}'
   check:
     desc: Check formatting and lint the runtime; task test covers upstream tests
     deps: [source:line-check]
     cmds:
-      - cargo fmt --check
-      - cargo clippy --lib --bins --locked --target-dir '{{.output_dir}}' -- -D warnings
-      - go vet tools/smoke/main.go
-      - go vet tools/quality/main.go
+      - cargo fmt --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --check
+      - cargo clippy --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --lib --bins --locked --jobs '{{.jobs}}' --target-dir '{{.output_dir}}' -- -D warnings
+      - go vet '{{.ROOT_DIR}}/tools/smoke/main.go'
+      - go vet '{{.ROOT_DIR}}/tools/quality/main.go'
+      - go vet '{{.ROOT_DIR}}/tools/install/main.go'
   test:
     desc: Run the existing regression suite and C/C++ coverage
     cmds:
-      - cargo test --locked --target-dir '{{.output_dir}}'
+      - cargo test --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --locked --jobs '{{.jobs}}' --target-dir '{{.output_dir}}'
   test:cpp:
     desc: Run focused C/C++ tool-contract coverage
     cmds:
-      - cargo test --locked --target-dir '{{.output_dir}}' --test cpp_support
+      - cargo test --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --locked --jobs '{{.jobs}}' --target-dir '{{.output_dir}}' --test cpp_support
+  test:languages:
+    desc: Verify GDScript and Lua structural tool contracts
+    cmds:
+      - cargo test --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --locked --jobs '{{.jobs}}' --target-dir '{{.output_dir}}' --test scripting_support
+  test:install:
+    desc: Verify atomic executable publication preserves the previous inode
+    cmds:
+      - go test '{{.ROOT_DIR}}/tools/install/main.go' '{{.ROOT_DIR}}/tools/install/main_test.go'
+  test:regression:
+    desc: Final functional regressions with two test threads and no benchmark reporter
+    cmds:
+      - cargo test --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --locked --jobs '{{.jobs}}' --target-dir '{{.output_dir}}' -- --test-threads=2 --skip test_average_token_efficiency_for_core_workflows
+      - task: test:install
+  smoke:languages:
+    desc: Verify five-language tool matrix plus existing Python and C++ stdio coverage
+    cmds:
+      - task: smoke
   format:
     cmds:
-      - cargo fmt
-      - gofmt -w tools/smoke/main.go tools/quality/main.go
+      - cargo fmt --manifest-path '{{.ROOT_DIR}}/Cargo.toml'
+      - gofmt -w '{{.ROOT_DIR}}/tools/smoke/main.go' '{{.ROOT_DIR}}/tools/quality/main.go' '{{.ROOT_DIR}}/tools/install/main.go' '{{.ROOT_DIR}}/tools/install/main_test.go'
   source:line-check:
     desc: Enforce 500 lines for maintained files in the current change
     cmds:
-      - go run tools/quality/main.go --root .
+      - go run '{{.ROOT_DIR}}/tools/quality/main.go' --root '{{.ROOT_DIR}}'
   smoke:
     desc: Exercise the staged MCP over stdio; optionally pass --voxel-root PATH
     cmds:
-      - go run tools/smoke/main.go --binary '{{.binary}}' --root . {{.CLI_ARGS}}
+      - go run '{{.ROOT_DIR}}/tools/smoke/main.go' --binary '{{.binary}}' --root '{{.ROOT_DIR}}' {{.CLI_ARGS}}
+  install:
+    desc: Atomically install an explicitly staged binary; running clients retain their inode
+    requires:
+      vars: [source]
+    cmds:
+      - go run '{{.ROOT_DIR}}/tools/install/main.go' --source '{{.source}}' --destination '{{.ROOT_DIR}}/target/release/treesitter-mcp'

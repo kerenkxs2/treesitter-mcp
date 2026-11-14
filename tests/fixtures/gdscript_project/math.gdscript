@@ -1,0 +1,4 @@
+extends RefCounted
+
+static func scale(value: float) -> float:
+    return value * 2.0

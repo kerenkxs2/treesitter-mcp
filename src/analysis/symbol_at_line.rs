@@ -186,6 +186,14 @@ fn collect_scope_chain(mut node: Node, source: &str, language: Language) -> Vec<
 /// Check if a node type represents a context boundary
 fn is_context_node(node_type: &str, language: Language) -> bool {
     match language {
+        Language::GDScript => matches!(
+            node_type,
+            "function_definition" | "lambda" | "class_definition"
+        ),
+        Language::Lua => matches!(
+            node_type,
+            "function_declaration" | "function_definition" | "table_constructor"
+        ),
         Language::Rust => matches!(
             node_type,
             "function_item" | "impl_item" | "trait_item" | "struct_item" | "enum_item" | "mod_item"
@@ -194,7 +202,7 @@ fn is_context_node(node_type: &str, language: Language) -> bool {
             node_type,
             "function_definition" | "class_definition" | "module"
         ),
-        Language::JavaScript | Language::TypeScript => matches!(
+        Language::JavaScript | Language::TypeScript | Language::Tsx => matches!(
             node_type,
             "function_declaration"
                 | "method_definition"
@@ -267,6 +275,13 @@ fn extract_scope_info(node: Node, source: &str) -> Option<ScopeInfo> {
 
 /// Extract name from a node
 fn extract_name(node: Node, source: &str) -> Option<String> {
+    if matches!(
+        node.kind(),
+        "function_definition" | "table_constructor" | "lambda"
+    ) && node.child_by_field_name("declarator").is_none()
+    {
+        return crate::parser::scripting::context_name(node, source);
+    }
     if (node.kind() == "function_definition" && node.child_by_field_name("declarator").is_some())
         || matches!(
             node.kind(),

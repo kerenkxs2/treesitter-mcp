@@ -9,6 +9,9 @@ use streaming_iterator::StreamingIterator;
 use tree_sitter::{Node, Query, QueryCursor, Tree};
 
 pub(crate) mod c_family;
+mod gdscript;
+mod lua;
+mod scripting;
 
 /// Enhanced function information with signature and documentation
 #[derive(Debug, serde::Serialize, Clone)]
@@ -173,13 +176,15 @@ pub fn extract_enhanced_shape(
     include_code: bool,
 ) -> Result<EnhancedFileShape, io::Error> {
     let shape = match language {
+        Language::GDScript => gdscript::extract(tree, source, include_code),
+        Language::Lua => lua::extract(tree, source, include_code),
         Language::Rust => extract_rust_enhanced(tree, source, include_code)?,
         Language::Python => extract_python_enhanced(tree, source, include_code)?,
         Language::JavaScript => {
             extract_js_enhanced(tree, source, Language::JavaScript, include_code)?
         }
-        Language::TypeScript => {
-            extract_js_enhanced(tree, source, Language::TypeScript, include_code)?
+        Language::TypeScript | Language::Tsx => {
+            extract_js_enhanced(tree, source, language, include_code)?
         }
         Language::Swift => extract_swift_enhanced(tree, source, include_code)?,
         Language::CSharp => extract_csharp_enhanced(tree, source, include_code)?,

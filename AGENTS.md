@@ -10,6 +10,16 @@
 - **MCP protocol smoke**: `task smoke`, optionally `-- --voxel-root /path/to/godot_voxel` for real C++ source. The smoke server is isolated; deployment/reload of connected clients is a separate operation.
 - Task parameters are explicit inputs. Do not add environment-variable modes or replace the Taskfile with shell automation. Local maintenance requires Rust, Task and Go.
 
+## Portable tooling and local host facts
+
+Serena and Tree-sitter must provide functional coverage for at least TypeScript, Rust, Go, GDScript and Lua. Verify the actual language operations; configuration entries and successful builds alone do not prove support.
+
+Machine-specific facts belong in an ignored local `.env`: installed external executable paths, user home or checkout locations, state directories, host identity and local endpoints. Keep these facts out of source constants, hardcoded host allowlists, versioned Taskfile paths and assistant rules tied to named machines. Project-internal paths derive from the absolute project root; shared protocols, dependency versions/checksums and environment-independent behavior remain versioned.
+
+Read local facts through the canonical typed configuration boundary, with clear errors for missing or invalid required values. Do not source arbitrary shell code or maintain competing local configuration readers. Environment files hold stable facts or secrets, never hidden feature toggles, bypasses, alternate pipelines or execution modes. Preserve existing credentials and their documented ownership; changing a local fact does not grant agent access.
+
+Keep `AGENTS.md`, `CLAUDE.md` and `GEMINI.md` synchronized in the same change. Shared skills describe this portable contract; host installations and generated runtime metadata are validated separately.
+
 ## Code Style & Conventions
 - **TDD Approach**: Follow RED/GREEN/BLUE pattern - write tests first, implement to pass, refactor
 - **Testing**: Write always test for business logic and requirements and if these are missing ask for them

@@ -6,7 +6,14 @@ pub(crate) fn extract_typescript_types(
     is_typescript: bool,
 ) -> Result<Vec<TypeDefinition>> {
     let mut parser = Parser::new();
-    let language = if is_typescript {
+    let language = if is_typescript
+        && relative_path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("tsx"))
+    {
+        tree_sitter_typescript::LANGUAGE_TSX.into()
+    } else if is_typescript {
         tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into()
     } else {
         tree_sitter_javascript::LANGUAGE.into()

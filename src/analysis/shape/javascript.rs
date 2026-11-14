@@ -13,14 +13,11 @@ pub(super) fn extract_js_enhanced(
     let mut interfaces = Vec::new();
 
     // Use the correct language for the query
-    let ts_language = match language {
-        Language::TypeScript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
-        _ => tree_sitter_javascript::LANGUAGE.into(),
-    };
+    let ts_language = language.tree_sitter_language();
 
     // Different query patterns for TypeScript vs JavaScript
     let query_str = match language {
-        Language::TypeScript => {
+        Language::TypeScript | Language::Tsx => {
             r#"
         (function_declaration) @func
         (class_declaration) @class
@@ -328,7 +325,9 @@ pub(super) fn extract_class_methods(
     // Find the class body
     let body = match language {
         Language::Python => class_node.child_by_field_name("body"),
-        Language::JavaScript | Language::TypeScript => class_node.child_by_field_name("body"),
+        Language::JavaScript | Language::TypeScript | Language::Tsx => {
+            class_node.child_by_field_name("body")
+        }
         Language::Swift => class_node.child_by_field_name("body"),
         _ => None,
     };
@@ -346,7 +345,7 @@ pub(super) fn extract_class_methods(
 
             let is_method = match language {
                 Language::Python => child.kind() == "function_definition",
-                Language::JavaScript | Language::TypeScript => {
+                Language::JavaScript | Language::TypeScript | Language::Tsx => {
                     child.kind() == "method_definition" || child.kind() == "function_declaration"
                 }
                 Language::Swift => child.kind() == "function_declaration",

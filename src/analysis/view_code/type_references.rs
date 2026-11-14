@@ -10,6 +10,7 @@ pub(super) fn extract_referenced_type_names(
     match language {
         crate::parser::Language::Rust
         | crate::parser::Language::TypeScript
+        | crate::parser::Language::Tsx
         | crate::parser::Language::Python
         | crate::parser::Language::Go
         | crate::parser::Language::C
@@ -73,7 +74,7 @@ pub(super) fn extract_local_type_definitions(
 ) -> Option<Vec<TypeDefinition>> {
     match language {
         crate::parser::Language::Rust => extract_rust_types(source, file_path).ok(),
-        crate::parser::Language::TypeScript => {
+        crate::parser::Language::TypeScript | crate::parser::Language::Tsx => {
             extract_typescript_types(source, file_path, true).ok()
         }
         crate::parser::Language::Python => extract_python_types(source, file_path).ok(),

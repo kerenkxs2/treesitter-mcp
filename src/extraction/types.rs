@@ -14,7 +14,9 @@ use crate::common::project_files::collect_project_files;
 const HARD_TYPE_LIMIT: usize = 1000;
 
 mod c_family;
+mod scripting;
 pub(crate) use c_family::extract_c_family_types;
+pub(crate) use scripting::extract as extract_scripting_types;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TypeExtractionResult {
@@ -232,6 +234,12 @@ fn process_file_with_source(
     result: &mut TypeExtractionResult,
 ) -> Result<()> {
     let file_types = match language {
+        SupportedLanguage::GDScript => {
+            scripting::extract(source, relative_path, crate::parser::Language::GDScript)?
+        }
+        SupportedLanguage::Lua => {
+            scripting::extract(source, relative_path, crate::parser::Language::Lua)?
+        }
         SupportedLanguage::Rust => extract_rust_types(source, relative_path)?,
         SupportedLanguage::TypeScript => extract_typescript_types(source, relative_path, true)?,
         SupportedLanguage::JavaScript => extract_typescript_types(source, relative_path, false)?,
@@ -297,6 +305,8 @@ fn normalize_path(path: &Path) -> String {
 
 #[derive(Debug, Clone, Copy)]
 enum SupportedLanguage {
+    GDScript,
+    Lua,
     Rust,
     TypeScript,
     JavaScript,
@@ -318,6 +328,8 @@ fn detect_language(path: &Path) -> Option<SupportedLanguage> {
     }
     let ext = path.extension()?.to_str()?.to_ascii_lowercase();
     match ext.as_str() {
+        "gd" | "gdscript" => Some(SupportedLanguage::GDScript),
+        "lua" => Some(SupportedLanguage::Lua),
         "rs" => Some(SupportedLanguage::Rust),
         "ts" | "tsx" => Some(SupportedLanguage::TypeScript),
         "js" | "jsx" | "mjs" | "cjs" => Some(SupportedLanguage::JavaScript),

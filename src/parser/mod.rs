@@ -2,20 +2,28 @@ use eyre::{bail, Result};
 use std::path::Path;
 use tree_sitter::{Parser, Tree};
 
+pub(crate) mod scripting;
+
 /// Supported programming languages for tree-sitter parsing
 ///
 /// Each language has a corresponding tree-sitter grammar that can parse
 /// source code into a concrete syntax tree.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Language {
+    /// Godot GDScript (.gd, .gdscript).
+    GDScript,
+    /// Lua (.lua).
+    Lua,
     /// Rust programming language (.rs)
     Rust,
     /// Python programming language (.py)
     Python,
     /// JavaScript (.js, .mjs, .cjs)
     JavaScript,
-    /// TypeScript (.ts, .tsx)
+    /// TypeScript (.ts).
     TypeScript,
+    /// TypeScript with JSX (.tsx), using the TSX grammar.
+    Tsx,
     /// HTML markup (.html, .htm)
     Html,
     /// CSS stylesheets (.css)
@@ -38,10 +46,12 @@ impl Language {
     /// Get a human-readable name for the language
     pub fn name(&self) -> &'static str {
         match self {
+            Language::GDScript => "GDScript",
+            Language::Lua => "Lua",
             Language::Rust => "Rust",
             Language::Python => "Python",
             Language::JavaScript => "JavaScript",
-            Language::TypeScript => "TypeScript",
+            Language::TypeScript | Language::Tsx => "TypeScript",
             Language::Html => "HTML",
             Language::Css => "CSS",
             Language::Swift => "Swift",
@@ -56,10 +66,13 @@ impl Language {
     /// Get the tree-sitter language grammar for this language
     pub fn tree_sitter_language(&self) -> tree_sitter::Language {
         match self {
+            Language::GDScript => tree_sitter_gdscript::LANGUAGE.into(),
+            Language::Lua => tree_sitter_lua::LANGUAGE.into(),
             Language::Rust => tree_sitter_rust::LANGUAGE.into(),
             Language::Python => tree_sitter_python::LANGUAGE.into(),
             Language::JavaScript => tree_sitter_javascript::LANGUAGE.into(),
             Language::TypeScript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
+            Language::Tsx => tree_sitter_typescript::LANGUAGE_TSX.into(),
             Language::Html => tree_sitter_html::LANGUAGE.into(),
             Language::Css => tree_sitter_css::LANGUAGE.into(),
             Language::Swift => tree_sitter_swift::LANGUAGE.into(),
@@ -129,10 +142,13 @@ pub fn detect_language(path: impl AsRef<Path>) -> Result<Language> {
         .map(|e| e.to_lowercase());
 
     match extension.as_deref() {
+        Some("gd" | "gdscript") => Ok(Language::GDScript),
+        Some("lua") => Ok(Language::Lua),
         Some("rs") => Ok(Language::Rust),
         Some("py") => Ok(Language::Python),
         Some("js") | Some("mjs") | Some("cjs") => Ok(Language::JavaScript),
-        Some("ts") | Some("tsx") => Ok(Language::TypeScript),
+        Some("ts") => Ok(Language::TypeScript),
+        Some("tsx") => Ok(Language::Tsx),
         Some("html") | Some("htm") => Ok(Language::Html),
         Some("css") => Ok(Language::Css),
         Some("swift") => Ok(Language::Swift),

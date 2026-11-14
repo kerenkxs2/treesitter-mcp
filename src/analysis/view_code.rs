@@ -371,7 +371,13 @@ fn apply_focus(shape: &mut EnhancedFileShape, focus_symbol: &str) {
         } else {
             class.code = None;
             for method in &mut class.methods {
-                method.code = None;
+                if method.name == focus_symbol
+                    || format!("{}::{}", class.name, method.name) == focus_symbol
+                {
+                    found = true;
+                } else {
+                    method.code = None;
+                }
             }
         }
     }

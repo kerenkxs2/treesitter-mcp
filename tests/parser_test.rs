@@ -52,11 +52,11 @@ fn test_detect_language_from_typescript_file() {
 ///
 /// Verifies that the `detect_language` function properly identifies TypeScript React component files
 /// by their .tsx extension. TSX files are TypeScript files with JSX syntax and should be parsed
-/// using the TypeScript grammar.
+/// using the dedicated TSX grammar.
 #[test]
 fn test_detect_language_from_tsx_file() {
     let lang = detect_language("component.tsx").unwrap();
-    assert_eq!(lang, Language::TypeScript);
+    assert_eq!(lang, Language::Tsx);
 }
 
 /// Test that HTML files (.html) are correctly detected

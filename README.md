@@ -237,6 +237,8 @@ Tree-sitter MCP Server exposes powerful code analysis tools through the MCP prot
 - **C#** (.cs)
 - **Java** (.java)
 - **Go** (.go)
+- **GDScript** (.gd, .gdscript)
+- **Lua** (.lua)
 - **C** (.c)
 - **C++** (.cpp, .cc, .cxx, .c++, .h, .hpp, .hh, .hxx and Unix .C)
 
@@ -248,6 +250,18 @@ Local quoted includes resolve relative to their source file. Compiler include pa
 macro expansion, overload resolution and exact semantic references still belong to
 the compiler/LSP; syntax-based call and usage results retain that limitation.
 
+GDScript uses its dedicated grammar for `class_name`, nested classes, typed methods,
+properties, `extends` and literal `load`/`preload` dependencies. Lua supports named
+functions, assigned anonymous functions, module/table methods and literal `require`
+dependencies. These declarations feed the same shape, usage, call-graph, type-map,
+focused-context and structural-diff operations as other languages. Lua tables appear
+as records in `type_map` and as class-shaped modules in `view_code`. Dynamic module
+paths, Lua `package.path` customization and runtime metatable resolution require
+runtime/LSP knowledge. Call graphs remain syntax-based project-local hints.
+Godot `res://` paths resolve from the nearest `project.godot`; Lua literal modules
+resolve as `<project>/<module>.lua` or `<project>/<module>/init.lua`.
+TSX files use the dedicated TSX grammar, while `.ts` retains the TypeScript grammar.
+
 ## Local command surface
 
 Use the root Taskfile for local maintenance:
@@ -256,8 +270,10 @@ Use the root Taskfile for local maintenance:
 task build
 task check
 task test:cpp
+task test:languages
 task test
 task smoke
+task smoke:languages
 ```
 
 `task build` writes the normal `target/release/treesitter-mcp`. To prepare and verify
@@ -268,11 +284,23 @@ task build output_dir=target/alpha-cpp
 task smoke output_dir=target/alpha-cpp -- --voxel-root /path/to/godot_voxel
 ```
 
-Smoke starts its own MCP stdio server and checks existing Python, Go, Rust and
-TypeScript fixtures plus the C++ header/source fixture. An explicit `--voxel-root`
+Smoke starts its own MCP stdio server and checks Python, Go, Rust, TypeScript/TSX,
+GDScript and Lua plus the C++ header/source fixture. The five-language matrix checks
+signatures, code maps, usages, types, focused context and call graphs. An explicit `--voxel-root`
 also checks real Voxel Tools source with `view_code`, `code_map`, `find_usages` and
 `type_map`. It does not restart connected clients. `binary=/path/to/executable`
 can select an already built executable explicitly.
+
+Builds and checks use two compiler jobs by default; `jobs=2` is an explicit task
+input. Publish a reviewed staged build atomically through the same command surface:
+
+```text
+task install source=/absolute/staging/path/treesitter-mcp
+```
+
+The install replaces the registered executable with an atomic rename, preserving
+existing clients' executable inode. Reconnect a client to load the new build;
+installing does not restart or update already connected MCP processes.
 
 `task source:line-check` enforces the 500-line ceiling on maintained programming
 files in the current Git change, including newly authored files. The extraction

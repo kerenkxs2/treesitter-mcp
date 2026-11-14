@@ -174,7 +174,7 @@ pub(super) fn extract_ts_symbols(
     use tree_sitter::{Query, QueryCursor};
 
     let query = Query::new(
-        &tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
+        &tree.language(),
         r#"
         (function_declaration name: (identifier) @func.name) @func
         (class_declaration name: (type_identifier) @class.name) @class
