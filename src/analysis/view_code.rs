@@ -394,7 +394,9 @@ fn apply_focus(shape: &mut EnhancedFileShape, focus_symbol: &str) {
 
     for block in &mut shape.impl_blocks {
         for method in &mut block.methods {
-            if method.name == focus_symbol {
+            if method.name == focus_symbol
+                || format!("{}::{}", block.type_name, method.name) == focus_symbol
+            {
                 found = true;
             } else {
                 method.code = None;

@@ -176,6 +176,22 @@ func run(binary, root, voxel string) error {
 		}
 	}
 	cpp := filepath.Join(root, "tests/fixtures/cpp_terrain")
+	receivers := filepath.Join(root, "tests/fixtures/go_receivers/methods.go")
+	for _, call := range []struct {
+		name   string
+		args   map[string]any
+		marker string
+	}{
+		{"view_code", map[string]any{"file_path": receivers, "detail": "full", "focus_symbol": "Planner::buildPodman"}, "twice(value)"},
+		{"code_map", map[string]any{"path": receivers, "detail": "signatures"}, "Planner::buildPodman"},
+		{"minimal_edit_context", map[string]any{"file_path": receivers, "symbol_name": "Planner::buildPodman"}, "Planner"},
+		{"call_graph", map[string]any{"file_path": receivers, "symbol_name": "Planner::buildPodman", "direction": "callees"}, "callee|twice|"},
+		{"find_usages", map[string]any{"path": receivers, "symbol": "buildPodman", "context_lines": 0}, "|call|"},
+	} {
+		if err = c.tool(call.name, call.args, call.marker); err != nil {
+			return err
+		}
+	}
 	for _, call := range []struct {
 		name   string
 		args   map[string]any

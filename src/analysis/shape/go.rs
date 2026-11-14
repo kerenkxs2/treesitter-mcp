@@ -10,11 +10,13 @@ pub(super) fn extract_go_enhanced(
     let mut structs = Vec::new();
     let mut traits = Vec::new();
     let mut imports = Vec::new();
+    let mut impl_blocks: Vec<ImplBlockInfo> = Vec::new();
 
     let query = Query::new(
         &tree_sitter_go::LANGUAGE.into(),
         r#"
         (function_declaration name: (identifier) @func.name) @func
+        (method_declaration) @method
         (type_spec name: (type_identifier) @struct.name type: (struct_type)) @struct
         (type_spec name: (type_identifier) @iface.name type: (interface_type)) @iface
         (import_spec path: (interpreted_string_literal) @import.path) @import
@@ -39,6 +41,26 @@ pub(super) fn extract_go_enhanced(
             let capture_name = query.capture_names()[capture.index as usize];
 
             match capture_name {
+                "method" => {
+                    if let Some((owner, method)) = extract_go_method(node, source, include_code)? {
+                        if let Some(block) = impl_blocks
+                            .iter_mut()
+                            .find(|block| block.type_name == owner)
+                        {
+                            block.line = block.line.min(method.line);
+                            block.end_line = block.end_line.max(method.end_line);
+                            block.methods.push(method);
+                        } else {
+                            impl_blocks.push(ImplBlockInfo {
+                                type_name: owner,
+                                trait_name: None,
+                                line: method.line,
+                                end_line: method.end_line,
+                                methods: vec![method],
+                            });
+                        }
+                    }
+                }
                 "func.name" => {
                     if let Ok(func_node) = find_parent_by_type(node, "function_declaration") {
                         let node_id = func_node.id();
@@ -153,10 +175,54 @@ pub(super) fn extract_go_enhanced(
         structs,
         classes: vec![],
         imports,
-        impl_blocks: vec![],
+        impl_blocks,
         traits,
         interfaces: vec![],
         properties: vec![],
         dependencies: vec![],
     })
+}
+
+/// Receiver ownership comes from the method declaration, independently of where
+/// the receiver type is declared. Pointer and generic receiver syntax is retained
+/// in the method signature; the group is named after the receiver's base type.
+fn extract_go_method(
+    node: Node<'_>,
+    source: &str,
+    include_code: bool,
+) -> Result<Option<(String, MethodInfo)>, io::Error> {
+    let Some(name) = node.child_by_field_name("name") else {
+        return Ok(None);
+    };
+    let Some(receiver) = node.child_by_field_name("receiver") else {
+        return Ok(None);
+    };
+    let receiver_type = receiver
+        .named_children(&mut receiver.walk())
+        .find_map(|parameter| parameter.child_by_field_name("type"));
+    let Some(receiver_type) = receiver_type else {
+        return Ok(None);
+    };
+    let owner = receiver_type
+        .utf8_text(source.as_bytes())
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?
+        .trim_start_matches('*')
+        .trim()
+        .to_string();
+    let method = MethodInfo {
+        name: name
+            .utf8_text(source.as_bytes())
+            .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?
+            .into(),
+        signature: extract_signature(node, source)?,
+        line: node.start_position().row + 1,
+        end_line: node.end_position().row + 1,
+        doc: extract_doc_comment(node, source, Language::Go)?,
+        code: if include_code {
+            extract_code(node, source)?
+        } else {
+            None
+        },
+    };
+    Ok(Some((owner, method)))
 }

@@ -261,6 +261,9 @@ runtime/LSP knowledge. Call graphs remain syntax-based project-local hints.
 Godot `res://` paths resolve from the nearest `project.godot`; Lua literal modules
 resolve as `<project>/<module>.lua` or `<project>/<module>/init.lua`.
 TSX files use the dedicated TSX grammar, while `.ts` retains the TypeScript grammar.
+Go receiver methods retain their value, pointer and generic signatures even when
+their type is declared in another file. They use receiver-owned method rows in
+`view_code` and accept either a simple name or `Receiver::method` in focused context.
 
 ## Local command surface
 

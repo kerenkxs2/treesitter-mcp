@@ -28,7 +28,7 @@ pub(super) fn find_target_symbol(shape: &EnhancedFileShape, symbol: &str) -> Opt
 
     for block in &shape.impl_blocks {
         for method in &block.methods {
-            if method.name == symbol {
+            if method.name == symbol || format!("{}::{}", block.type_name, method.name) == symbol {
                 return Some(TargetSymbol {
                     name: method.name.clone(),
                     line: method.line,

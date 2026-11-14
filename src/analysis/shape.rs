@@ -82,7 +82,7 @@ pub struct MethodInfo {
     pub code: Option<String>,
 }
 
-/// Impl block information (Rust)
+/// Receiver-owned method group (Rust impl blocks and Go receiver methods).
 #[derive(Debug, serde::Serialize, Clone)]
 pub struct ImplBlockInfo {
     pub type_name: String, // "Calculator", "Vec<T>", "Container<T>", etc.

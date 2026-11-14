@@ -78,6 +78,26 @@ pub(super) fn process_file_combined(
             functions.push(filter_function_by_detail(&method, options.detail_level));
         }
     }
+    // Rust already exposes impl functions in its function table. Go receiver
+    // methods live only in receiver groups and need this projection for maps.
+    if language == crate::parser::Language::Go {
+        for block in &enhanced_shape.impl_blocks {
+            for method in &block.methods {
+                functions.push(filter_function_by_detail(
+                    &EnhancedFunctionInfo {
+                        name: format!("{}::{}", block.type_name, method.name),
+                        signature: method.signature.clone(),
+                        line: method.line,
+                        end_line: method.end_line,
+                        doc: method.doc.clone(),
+                        code: method.code.clone(),
+                        annotations: vec![],
+                    },
+                    options.detail_level,
+                ));
+            }
+        }
+    }
 
     let structs = if enhanced_shape.structs.is_empty() {
         Vec::new()

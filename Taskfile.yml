@@ -32,6 +32,10 @@ tasks:
     desc: Verify GDScript and Lua structural tool contracts
     cmds:
       - cargo test --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --locked --jobs '{{.jobs}}' --target-dir '{{.output_dir}}' --test scripting_support
+  test:go-receivers:
+    desc: Verify receiver methods through focused Go and generic navigation contracts
+    cmds:
+      - cargo test --manifest-path '{{.ROOT_DIR}}/Cargo.toml' --locked --jobs '{{.jobs}}' --target-dir '{{.output_dir}}' --test go_receiver_tools_test --test go_language_test --test minimal_edit_context_test --test review_context_test --test call_graph_test --test code_map_tool_test
   test:install:
     desc: Verify atomic executable publication preserves the previous inode
     cmds:
