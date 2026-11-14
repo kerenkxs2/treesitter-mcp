@@ -22,9 +22,7 @@ Thumbs.db
 
 # others
 .gemini/
-CLAUDE.md
 CODEX.md
-GEMINI.md
 coverage/
 mutants.out/
 
@@ -33,3 +31,8 @@ mutants.out/
 # Serena project settings are shared; runtime state remains local.
 .serena/*
 !.serena/project.yml
+
+# Machine-local facts and credentials are never authored repository state.
+/.env
+/.env.*
+!/.env.example
